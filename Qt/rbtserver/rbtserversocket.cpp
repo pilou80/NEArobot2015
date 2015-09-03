@@ -75,7 +75,7 @@ void rbtserversocket::handleReadyRead()
 
     if(dataBuffer.count() < 4)
     {
-        qDebug() << "rbtserversocket::handleReadyRead() Data length error";
+        qWarning() << "rbtserversocket::handleReadyRead() Data length error (fulllength)";
         return;
     }
     uint fullLength = ((quint32)dataBuffer.at(0)<<24)+
@@ -83,16 +83,16 @@ void rbtserversocket::handleReadyRead()
             ((quint32)dataBuffer.at(2)<<8) +
              (quint32)dataBuffer.at(3);
 
-    if( (dataBuffer.count()-4) < fullLength) return;
+    if( (dataBuffer.count()-4) < (int)fullLength) return;
 
     dataBuffer.remove(0, 4);
 
     uint stringlength = ((quint32)dataBuffer.at(0)<<8) + (quint32)dataBuffer.at(1);
     dataBuffer.remove(0, 2);
 
-    if(dataBuffer.count() < stringlength)
+    if(dataBuffer.count() < (int)stringlength)
     {
-        qDebug() << "rbtserversocket::handleReadyRead() Data length error";
+        qWarning() << "rbtserversocket::handleReadyRead() Data length error (stringLength)";
         dataBuffer.clear();
         return;
     }
@@ -102,7 +102,7 @@ void rbtserversocket::handleReadyRead()
 
     if(dataBuffer.count() < 4)
     {
-        qDebug() << "rbtserversocket::handleReadyRead() Data length error";
+        qWarning() << "rbtserversocket::handleReadyRead() Data length error (dataLength)";
         dataBuffer.clear();
         return;
     }
@@ -112,9 +112,9 @@ void rbtserversocket::handleReadyRead()
             ((quint32)dataBuffer.at(2)<<8) +
             (quint32)dataBuffer.at(3);
     dataBuffer.remove(0, 4);
-    if(dataBuffer.count() < dataLength)
+    if(dataBuffer.count() < (int)dataLength)
     {
-        qDebug() << "rbtserversocket::handleReadyRead() Data length error";
+        qWarning() << "rbtserversocket::handleReadyRead() Data length error (data)";
         dataBuffer.clear();
         return;
     }
@@ -125,5 +125,10 @@ void rbtserversocket::handleReadyRead()
 
     qDebug() << "dataReceived : " << dataName << " => " << data.length() << "bytes";
     emit(dataReceived(dataName, data));
+
+}
+
+void rbtserversocket::sendData(QString datatype, QByteArray data)
+{
 
 }

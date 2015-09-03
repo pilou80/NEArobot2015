@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core network
+QT       += core network serialport
 
 QT       -= gui
 
@@ -18,9 +18,13 @@ TEMPLATE = app
 SOURCES += main.cpp \
     rbtserverarduinocom.cpp \
     rbtneatolidar.cpp \
-    rbtserversocket.cpp
+    rbtserversocket.cpp \
+    nearobotcore.cpp
 
 HEADERS += \
     rbtserverarduinocom.h \
     rbtneatolidar.h \
-    rbtserversocket.h
+    rbtserversocket.h \
+    nearobotcore.h
+
+INCLUDEPATH += ../../Arduino/rbt2015/

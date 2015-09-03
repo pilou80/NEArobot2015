@@ -15,8 +15,8 @@ public:
 
 signals:
     void dataReceived(QString datatype, QByteArray data);
-
 public slots:
+    void sendData(QString datatype, QByteArray data);
 
 private slots:
     void handleUdpTimerTimeout();

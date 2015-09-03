@@ -10,6 +10,8 @@ void setup()
 
   //Acquisition vers telemètre ultrason
 
+  //Uart1 => debug/prog
+  //Uart2 => comm Rpi
 
 }
 
