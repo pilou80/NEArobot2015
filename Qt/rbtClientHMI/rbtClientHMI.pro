@@ -13,9 +13,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        nearobothmi.cpp
+        nearobothmi.cpp \
+    lidarviewer.cpp
 
-HEADERS  += nearobothmi.h
+HEADERS  += nearobothmi.h \
+    lidarviewer.h
 
 FORMS    += nearobothmi.ui
 
