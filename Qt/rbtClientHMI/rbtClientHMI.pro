@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl
+QT       += core gui opengl network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,10 +14,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         nearobothmi.cpp \
-    lidarviewer.cpp
+    lidarviewer.cpp \
+    rbtclientsocket.cpp \
+    ../rbtCommon/rbtcommonserializer.cpp
 
 HEADERS  += nearobothmi.h \
-    lidarviewer.h
+    lidarviewer.h \
+    rbtclientsocket.h \
+    ../rbtCommon/rbtcommonserializer.h
+
+INCLUDEPATH += ../rbtCommon/
 
 FORMS    += nearobothmi.ui
 

@@ -36,7 +36,7 @@ public slots:
     void start();
     void stop();
     void setSpeed(float speed);
-    void speedControlState(void state); //If the speedControler is ready to receive control
+    void speedControlState(bool state); //If the speedControler is ready to receive control
 
 private slots:
     void handleReadyRead();

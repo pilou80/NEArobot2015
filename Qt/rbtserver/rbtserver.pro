@@ -19,12 +19,17 @@ SOURCES += main.cpp \
     rbtserverarduinocom.cpp \
     rbtneatolidar.cpp \
     rbtserversocket.cpp \
-    nearobotcore.cpp
+    nearobotcore.cpp \
+    ../rbtCommon/rbtcommonserializer.cpp \
+    rbtlogger.cpp
 
 HEADERS += \
     rbtserverarduinocom.h \
     rbtneatolidar.h \
     rbtserversocket.h \
-    nearobotcore.h
+    nearobotcore.h \
+    ../rbtCommon/rbtcommonserializer.h \
+    rbtlogger.h
 
 INCLUDEPATH += ../../Arduino/rbt2015/
+INCLUDEPATH += ../rbtCommon/

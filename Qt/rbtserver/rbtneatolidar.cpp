@@ -64,7 +64,7 @@ void rbtNeatoLidar::setSpeed(float speed)
     emit(setSpeedToMotorDriver(targetSpeed));
 }
 
-void rbtNeatoLidar::speedControlState(void state)
+void rbtNeatoLidar::speedControlState(bool state)
 {
     driverReady = state;
     if(started) emit(setSpeedToMotorDriver(targetSpeed));
@@ -148,7 +148,7 @@ void rbtNeatoLidar::handleReadyRead()
             }
         }
         dropBytes++;
-        if(dropBytes>22) qWarning << "rbtNeatoLidar::handleReadyRead too much data Dropped !";
+        if(dropBytes>22) qWarning() << "rbtNeatoLidar::handleReadyRead too much data Dropped !";
     }
     else
     {
@@ -181,7 +181,7 @@ quint16 rbtNeatoLidar::checksum(QByteArray data)
     // Compute and return the checksum as an int.
     // group the data by word, little-endian
     QByteArray dataTemp;
-    for(t=0; t<10;t++)
+    for(int t=0; t<10;t++)
         dataTemp.append( data[2*t] + (data[2*t+1]<<8) );
 
     // compute the checksum on 32 bits

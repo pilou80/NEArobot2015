@@ -4,6 +4,7 @@
 #include <QObject>
 #include "rbtserversocket.h"
 #include "rbtserverarduinocom.h"
+#include <rbtlogger.h>
 
 class NEARobotCore : public QObject
 {
@@ -18,6 +19,7 @@ public slots:
 private:
     rbtserversocket *server;
     rbtServerArduinoCom *arduino;
+    rbtLogger *logger;
 };
 
 #endif // NEAROBOTCORE_H

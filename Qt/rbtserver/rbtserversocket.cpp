@@ -1,7 +1,8 @@
 #include "rbtserversocket.h"
+#include "rbtcommonserializer.h"
 #include <QDebug>
 
-rbtserversocket::rbtserversocket(QObject *parent, QString name, uint port) : QObject(parent)
+rbtserversocket::rbtserversocket(QObject *parent, QString name, uint port, bool automaticMode) : QObject(parent)
 {
     serverName = name;
     serverPort = port;
@@ -11,16 +12,35 @@ rbtserversocket::rbtserversocket(QObject *parent, QString name, uint port) : QOb
 
     connect(udpTimer, SIGNAL(timeout()), this, SLOT(handleUdpTimerTimeout()));
 
-
-
     udpSocket = new QUdpSocket(this);
 
     tcpServer = new QTcpServer(this);
     connect(tcpServer, SIGNAL(newConnection()), this, SLOT(handleNewConnection()));
     tcpServer->listen(QHostAddress::Any, port);
 
-    udpTimer->start(1000);
+    m_clientIndex = 1;
 
+    if(automaticMode)
+    {
+        qDebug() << "rbtserversocket::rbtserversocket starting server in Automatic mode (udp brodcast port 1357)";
+        handleUdpTimerTimeout();
+        udpTimer->start(1000);
+    }
+    else qDebug() << "rbtserversocket::rbtserversocket starting server in manual Mode (tcp server port" << port << ")";
+}
+
+int rbtserversocket::clientId(QTcpSocket *socket)
+{
+    for(int i; i<clientList.count(); i++)
+        if(clientList.at(i).socket == socket) return clientList.at(i).clientId;
+    return -1;
+}
+
+int rbtserversocket::clientIndex(QTcpSocket *socket)
+{
+    for(int i; i<clientList.count(); i++)
+        if(clientList.at(i).socket == socket) return i;
+    return -1;
 }
 
 void rbtserversocket::handleUdpTimerTimeout()
@@ -41,15 +61,17 @@ void rbtserversocket::handleNewConnection()
 {
     Q_ASSERT_X(tcpServer->hasPendingConnections(), "rbtserversocket::handleNewConnection", "No pending Connections");
     QTcpSocket *newConn = tcpServer->nextPendingConnection();
-
     Q_ASSERT(newConn != NULL);
-    clientList.append(newConn);
-    qDebug() << "New client : " << newConn->localAddress().toString();
+
+    structClientInfo client;
+    client.socket = newConn;
+    client.clientId = m_clientIndex++;
+    client.buffer = new QByteArray();
+    clientList.append(client);
+
+    qDebug() << "rbtserversocket::handleNewConnection New client id:" << client.clientId <<" | ip: " << newConn->localAddress().toString();
     connect(newConn, SIGNAL(disconnected()), this, SLOT(handleClientDisconnect()));
     connect(newConn, SIGNAL(readyRead()), this, SLOT(handleReadyRead()));
-
-    dataBuffer.clear();
-
 }
 
 void rbtserversocket::handleClientDisconnect()
@@ -59,9 +81,14 @@ void rbtserversocket::handleClientDisconnect()
     Q_ASSERT( QString(client->metaObject()->className()) == "QTcpSocket");
     Q_ASSERT(client->state() == QAbstractSocket::UnconnectedState);
 
-    clientList.removeAll(client);
-    client->deleteLater();
 
+    int index = clientIndex(client);
+
+    qDebug() << "rbtserversocket::handleClientDisconnect client id:" << clientList.at(index).clientId <<" | ip: " << client->localAddress().toString();
+
+    clientList.at(index).socket->deleteLater();
+    delete clientList.at(index).buffer;
+    clientList.removeAt(index);
 }
 
 void rbtserversocket::handleReadyRead()
@@ -70,65 +97,40 @@ void rbtserversocket::handleReadyRead()
     Q_ASSERT(client != NULL);
     Q_ASSERT( QString(client->metaObject()->className()) == "QTcpSocket");
 
+    QByteArray *buffer = clientList.at(clientIndex(client)).buffer;
+    buffer->append(client->readAll());
 
-    dataBuffer.append(client->readAll());
+    QString dataName;
+    QByteArray data;
 
-    if(dataBuffer.count() < 4)
+    if(rbtCommonSerializer::deSerialize(&dataName, &data, buffer))
     {
-        qWarning() << "rbtserversocket::handleReadyRead() Data length error (fulllength)";
-        return;
+        qDebug() << "rbtserversocket::handleReadyRead dataReceived : " << dataName << " => " << data.length() << "bytes";
+        emit(dataReceived(dataName, data, clientList.at(clientIndex(client)).clientId));
     }
-    uint fullLength = ((quint32)dataBuffer.at(0)<<24)+
-            ((quint32)dataBuffer.at(1)<<16)+
-            ((quint32)dataBuffer.at(2)<<8) +
-             (quint32)dataBuffer.at(3);
-
-    if( (dataBuffer.count()-4) < (int)fullLength) return;
-
-    dataBuffer.remove(0, 4);
-
-    uint stringlength = ((quint32)dataBuffer.at(0)<<8) + (quint32)dataBuffer.at(1);
-    dataBuffer.remove(0, 2);
-
-    if(dataBuffer.count() < (int)stringlength)
-    {
-        qWarning() << "rbtserversocket::handleReadyRead() Data length error (stringLength)";
-        dataBuffer.clear();
-        return;
-    }
-
-    QString dataName = QString::fromLatin1(dataBuffer.left(stringlength));
-    dataBuffer.remove(0, stringlength);
-
-    if(dataBuffer.count() < 4)
-    {
-        qWarning() << "rbtserversocket::handleReadyRead() Data length error (dataLength)";
-        dataBuffer.clear();
-        return;
-    }
-
-    uint dataLength = ((quint32)dataBuffer.at(0)<<24)+
-            ((quint32)dataBuffer.at(1)<<16)+
-            ((quint32)dataBuffer.at(2)<<8) +
-            (quint32)dataBuffer.at(3);
-    dataBuffer.remove(0, 4);
-    if(dataBuffer.count() < (int)dataLength)
-    {
-        qWarning() << "rbtserversocket::handleReadyRead() Data length error (data)";
-        dataBuffer.clear();
-        return;
-    }
-
-    QByteArray data = dataBuffer.left(dataLength);
-
-    dataBuffer.remove(0, dataLength);
-
-    qDebug() << "dataReceived : " << dataName << " => " << data.length() << "bytes";
-    emit(dataReceived(dataName, data));
-
 }
 
-void rbtserversocket::sendData(QString datatype, QByteArray data)
+void rbtserversocket::sendData(QString dataName, QByteArray data, QList<int> ids)
 {
+    if(clientList.count() == 0) return;
+    QByteArray dataSerial;
+    rbtCommonSerializer::serialize(dataName, &data, &dataSerial);
 
+    //No id list mean broadcast to all Client
+    if(ids.count() == 0)
+    {
+        foreach(structClientInfo client, clientList)
+        {
+            if(client.socket->isWritable()) client.socket->write(dataSerial);
+        }
+    }
+    else
+    {
+        foreach(structClientInfo client, clientList)
+        {
+            if(ids.contains(client.clientId) &&
+               (client.socket->isWritable()))
+                    client.socket->write(dataSerial);
+        }
+    }
 }

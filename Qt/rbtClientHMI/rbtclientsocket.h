@@ -1,21 +1,22 @@
-#ifndef IAA_PICTURE_CLIENT_H
-#define IAA_PICTURE_CLIENT_H
+#ifndef RBTCLIENTSOCKET_H
+#define RBTCLIENTSOCKET_H
 
 #include <QObject>
 #include <QUdpSocket>
 #include <QTcpSocket>
 
-class iaa_picture_client : public QObject
+class rbtClientSocket : public QObject
 {
     Q_OBJECT
 public:
-    explicit iaa_picture_client(QObject *parent = 0);
+    explicit rbtClientSocket(QObject *parent = 0, bool automatic = true);
 
 signals:
     void connectionStatusChange(bool state);
+    void dataReceived(QString dataName, QByteArray data);
 
 public slots:
-    void dataSend(QString datatype, QByteArray data);
+    void dataSend(QString dataName, QByteArray data);
 
 private slots:
     void handleClientConnected();
@@ -27,4 +28,4 @@ private:
     QTcpSocket *tcpSocket;
 };
 
-#endif // IAA_PICTURE_CLIENT_H
+#endif // RBTCLIENTSOCKET_H
